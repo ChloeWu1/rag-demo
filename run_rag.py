@@ -1,5 +1,9 @@
 # Select model for inference
+import os
+import gradio as gr
 from pathlib import Path
+from typing import List
+from threading import Thread
 from optimum.intel.openvino import (
     OVModelForSequenceClassification,
     OVModelForFeatureExtraction,
@@ -12,6 +16,32 @@ from transformers import (
     TextIteratorStreamer,
     StoppingCriteria,
     StoppingCriteriaList,
+)
+from langchain_community.embeddings import OpenVINOBgeEmbeddings
+from langchain_community.document_compressors.openvino_rerank import OpenVINOReranker
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from langchain.prompts import PromptTemplate
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.docstore.document import Document
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import (
+    CharacterTextSplitter,
+    RecursiveCharacterTextSplitter,
+    MarkdownTextSplitter,
+)
+from langchain.document_loaders import (
+    CSVLoader,
+    EverNoteLoader,
+    PDFMinerLoader,
+    TextLoader,
+    UnstructuredEPubLoader,
+    UnstructuredHTMLLoader,
+    UnstructuredMarkdownLoader,
+    UnstructuredODTLoader,
+    UnstructuredPowerPointLoader,
+    UnstructuredWordDocumentLoader,
 )
 
 from llm_config import (
@@ -139,8 +169,6 @@ print("llm_device is", llm_device)
 print(f"LLM model will be loaded to {llm_device.value} device for response generation")
 
 
-from langchain_community.embeddings import OpenVINOBgeEmbeddings
-
 embedding_model_name = embedding_model_id.value
 embedding_model_kwargs = {"device": embedding_device.value}
 encode_kwargs = {
@@ -158,7 +186,6 @@ text = "This is a test document."
 embedding_result = embedding.embed_query(text)
 embedding_result[:3]
 
-from langchain_community.document_compressors.openvino_rerank import OpenVINOReranker
 
 rerank_model_name = rerank_model_id.value
 rerank_model_kwargs = {"device": rerank_device.value}
@@ -185,7 +212,6 @@ model_to_run = widgets.Dropdown(
 )
 print("model_to_run is", model_to_run)
 
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 
 if model_to_run.value == "INT4":
     model_dir = int4_model_dir
@@ -195,7 +221,10 @@ else:
     model_dir = fp16_model_dir
 print(f"Loading model from {model_dir}")
 
-ov_config = {"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1", "CACHE_DIR": ""}
+
+cache_dir = os.path.join(os.getcwd(), "cache_dir")
+os.makedirs(cache_dir, exist_ok=True)
+ov_config = {"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1", "CACHE_DIR": "cache_dir"}
 
 # On a GPU device a model is executed in FP16 precision. For red-pajama-3b-chat model there known accuracy
 # issues caused by this, which we avoid by setting precision hint to "f32".
@@ -221,27 +250,8 @@ try:
 except Exception as e:
     print(f"An error occurred: {e}")
 
+
 # Run QA over Document
-from typing import List
-from langchain.text_splitter import (
-    CharacterTextSplitter,
-    RecursiveCharacterTextSplitter,
-    MarkdownTextSplitter,
-)
-from langchain.document_loaders import (
-    CSVLoader,
-    EverNoteLoader,
-    PDFMinerLoader,
-    TextLoader,
-    UnstructuredEPubLoader,
-    UnstructuredHTMLLoader,
-    UnstructuredMarkdownLoader,
-    UnstructuredODTLoader,
-    UnstructuredPowerPointLoader,
-    UnstructuredWordDocumentLoader,
-)
-
-
 class ChineseTextSplitter(CharacterTextSplitter):
     def __init__(self, pdf: bool = False, **kwargs):
         super().__init__(**kwargs)
@@ -284,28 +294,6 @@ LOADERS = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
-import warnings
-from langchain._api import LangChainDeprecationWarning
-warnings.simplefilter("ignore", category=LangChainDeprecationWarning)
-from langchain.prompts import PromptTemplate
-# from langchain.vectorstores import Chroma
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.docstore.document import Document
-from langchain.retrievers import ContextualCompressionRetriever
-from threading import Thread
-import gradio as gr
-from langchain_community.vectorstores import Chroma
-# from langchain_community.document_loaders import CSVLoader
-# from langchain_community.document_loaders import EverNoteLoader
-# from langchain_community.document_loaders import PDFMinerLoader
-# from langchain_community.document_loaders import TextLoader
-# from langchain_community.document_loaders import UnstructuredEPubLoader
-# from langchain_community.document_loaders import UnstructuredHTMLLoader
-# from langchain_community.document_loaders import UnstructuredMarkdownLoader
-# from langchain_community.document_loaders import UnstructuredODTLoader
-# from langchain_community.document_loaders import UnstructuredPowerPointLoader
-# from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 
 stop_tokens = llm_model_configuration.get("stop_tokens")
 
@@ -394,8 +382,6 @@ def create_vectordb(
 
     global db
     db = Chroma.from_documents(texts, embedding)
-    # embedding_function = SentenceTransformerEmbeddings(model_name="TinyLlama-1.1B-Chat-v1.0")
-    # db = Chroma.from_documents(texts, embedding_function)
 
     global retriever
     retriever = db.as_retriever(search_kwargs={"k": vector_search_top_k})
@@ -487,10 +473,6 @@ def bot(history, temperature, top_p, top_k, repetition_penalty, hide_full_prompt
     # Initialize an empty string to store the generated text
     partial_text = ""
     for new_text in streamer:
-        # print("////////////////\n")
-        # print(new_text)
-        # print("////////////////\n")
-
         partial_text = text_processor(partial_text, new_text)
         history[-1][1] = partial_text
         yield history
