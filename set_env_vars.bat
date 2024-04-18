@@ -1,0 +1,4 @@
+@echo off 
+set HTTP_PROXY=http://proxy-us.intel.com:914 
+set HTTPS_PROXY=http://proxy-us.intel.com:914 
+set PATH=C:\Users\intel\Miniconda3\envs\openvino_env\Lib\site-packages\openvino\libs;%C:\Users\intel\miniconda3\envs\openvino_env_py310;C:\Users\intel\miniconda3\envs\openvino_env_py310\Library\mingw-w64\bin;C:\Users\intel\miniconda3\envs\openvino_env_py310\Library\usr\bin;C:\Users\intel\miniconda3\envs\openvino_env_py310\Library\bin;C:\Users\intel\miniconda3\envs\openvino_env_py310\Scripts;C:\Users\intel\miniconda3\envs\openvino_env_py310\bin;C:\Users\intel\miniconda3\condabin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files\Git\cmd;C:\Users\intel\AppData\Local\Programs\Python\Python310\Scripts;C:\Users\intel\AppData\Local\Programs\Python\Python310;C:\Users\intel\AppData\Local\Microsoft\WindowsApps;C:\Users\intel\Microsoft VS Code\bin% 
