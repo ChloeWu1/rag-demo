@@ -2,7 +2,7 @@ import argparse
 import subprocess
 from pathlib import Path
 from transformers import AutoTokenizer
-from llm_config import SUPPORTED_LLM_MODELS
+from utils.llm_config import SUPPORTED_LLM_MODELS
 
 # Define compression configs for INT4
 compression_configs = {
@@ -107,9 +107,16 @@ while tokenizer is None:
 
     try:
         # Generate output_path
-        fp16_model_dir = Path(input_model_name) / "FP16"
-        int8_model_dir = Path(input_model_name) / "INT8_compressed_weights"
-        int4_model_dir = Path(input_model_name) / "INT4_compressed_weights"
+        model_dir = Path("model") / input_model_name
+        model_dir.mkdir(parents=True, exist_ok=True)  # 确保目录创建，包括其所有父目录
+
+        fp16_model_dir = model_dir / "FP16"
+        int8_model_dir = model_dir / "INT8_compressed_weights"
+        int4_model_dir = model_dir / "INT4_compressed_weights"
+
+        fp16_model_dir.mkdir(exist_ok=True)
+        int8_model_dir.mkdir(exist_ok=True)
+        int4_model_dir.mkdir(exist_ok=True)
 
         if weight_format == "fp16":
             output_path = fp16_model_dir

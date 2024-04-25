@@ -13,7 +13,7 @@ Windows 11
 
 2. Install Miniconda
    
-   - Install Miniconda for the "Just Me" option
+   - Install Miniconda for the `Just Me` option
    - Verify the installation path in the environment variable
    ```
    C:\Users\"your_username"\miniconda3
@@ -28,12 +28,11 @@ Windows 11
    ```
 
 4. Setup Working Environment
-   Create a new folder on the desktop, named openVino_prj
-   Put rag-requirements.txt, run_rag.py, set_env_vars.bat, run_rag.bat and the required model files into this folder
-   Run under openvino_env environment in Anaconda Prompt:
+   Create a new folder on the desktop, named `openvino-prj`.  
+   Run under `openvino_env` environment in Anaconda Prompt:
    ```
-   cd openvino_prj 
-   set_env_vars.bat
+   cd Desktop/openvino-prj
+   pip install -r rag-requirements.txt
    ```
 
 5. Setup Openvino-pkg Path and Proxy in openvino_env
@@ -44,22 +43,25 @@ Windows 11
    ```
 
 ## Running the Application
-   double click
+   Double click
    ```
    run_rag.bat
    ```
 
 ## Download and convert models
+   Run in the openvino_env
    ```
    python download_convert_model.py
    ```
-   Select the Chinese model by default, --language parameter can specify the model language
+   Select the Chinese model by default, `--language` parameter can specify the model language.
 
    ```
    python download_convert_model.py --language=English
    ```
 
-**Appendix: Package Versions**
+**Appendix**
+
+## Package Versions
 This appendix lists the versions of all installed packages for your reference.
 
 | Package                             | Version          |
@@ -90,5 +92,30 @@ This appendix lists the versions of all installed packages for your reference.
 | unstructured-client                 | 0.18.0           |
 | urllib3                             | 2.2.1            |
 | wheel                               | 0.41.2           |  
+
+## Project Structure
+```text
+openvino-prj/
+│
+├── download_convert_model.py
+├── rag-requirements.txt
+├── README.md
+├── run_rag.bat
+├── run_rag.py
+│
+├── bge-reranker-large/
+│
+├── bge-small-en-v1.5/
+│
+├── bge-small-zh-v1.5/
+│
+├── model/
+│   ├── cache_dir/
+│   └── qwen1.5-7b-chat/
+│
+└── utils/
+    ├── llm_config.py
+    ├── logo_trans.png
+    └── __init__.py
 
 This README provides instructions for setting up Miniconda, configuring the Conda environment, and running an application on a Windows 11 system. Follow the steps above to ensure proper setup and execution of the application. 
