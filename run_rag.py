@@ -1,16 +1,20 @@
 # Select model for inference
 import os
-import gradio as gr
+import time
+import webbrowser
+import threading
+from threading import Thread
 from pathlib import Path
 from typing import List
-from threading import Thread
+
+import torch
+import gradio as gr
+import openvino as ov
+
 from optimum.intel.openvino import (
     OVModelForSequenceClassification,
     OVModelForFeatureExtraction,
 )
-import openvino as ov
-import torch
-import ipywidgets as widgets
 from transformers import (
     AutoTokenizer,
     TextIteratorStreamer,
@@ -31,7 +35,7 @@ from langchain.text_splitter import (
     RecursiveCharacterTextSplitter,
     MarkdownTextSplitter,
 )
-from langchain.document_loaders import (
+from langchain_community.document_loaders import (
     CSVLoader,
     EverNoteLoader,
     PDFMinerLoader,
@@ -44,7 +48,7 @@ from langchain.document_loaders import (
     UnstructuredWordDocumentLoader,
 )
 
-from llm_config import (
+from utils.llm_config import (
     SUPPORTED_EMBEDDING_MODELS,
     SUPPORTED_RERANK_MODELS,
     SUPPORTED_LLM_MODELS,
@@ -52,32 +56,19 @@ from llm_config import (
 
 model_languages = list(SUPPORTED_LLM_MODELS)
 
-model_language = widgets.Dropdown(
-    options=model_languages,
-    value=model_languages[0],
-    description="Model Language:",
-    disabled=False,
-)
-print(model_language)
+model_language = model_languages[1]
+print("model language is:", model_language)
 
-llm_model_ids = [model_id for model_id, model_config in SUPPORTED_LLM_MODELS[model_language.value].items() if model_config.get("rag_prompt_template")]
+# Convert LLM model
+llm_model_ids = [model_id for model_id, model_config in SUPPORTED_LLM_MODELS[model_language].items() if model_config.get("rag_prompt_template")]
+llm_model_id = llm_model_ids[0]
+llm_model_configuration = SUPPORTED_LLM_MODELS[model_language][llm_model_id]
+print(f"Selected LLM model {llm_model_id}")
 
-llm_model_id = widgets.Dropdown(
-    options=llm_model_ids,
-    value=llm_model_ids[0],
-    description="Model:",
-    disabled=False,
-)
-print(llm_model_id)
-
-llm_model_configuration = SUPPORTED_LLM_MODELS[model_language.value][llm_model_id.value]
-print(f"Selected LLM model {llm_model_id.value}")
-
-pt_model_id = llm_model_configuration["model_id"]
-pt_model_name = llm_model_id.value.split("-")[0]
-fp16_model_dir = Path(llm_model_id.value) / "FP16"
-int8_model_dir = Path(llm_model_id.value) / "INT8_compressed_weights"
-int4_model_dir = Path(llm_model_id.value) / "INT4_compressed_weights"
+model_dir = Path("model") / llm_model_id
+fp16_model_dir = model_dir / "FP16"
+int8_model_dir = model_dir / "INT8_compressed_weights"
+int4_model_dir = model_dir / "INT4_compressed_weights"
 
 fp16_weights = fp16_model_dir / "openvino_model.bin"
 int8_weights = int8_model_dir / "openvino_model.bin"
@@ -92,92 +83,52 @@ for precision, compressed_weights in zip([8, 4], [int8_weights, int4_weights]):
         print(f"Compression rate for INT{precision} model: {fp16_weights.stat().st_size / compressed_weights.stat().st_size:.3f}")
 
 # Convert embedding model
-embedding_model_id = list(SUPPORTED_EMBEDDING_MODELS[model_language.value])
+embedding_model_ids = list(SUPPORTED_EMBEDDING_MODELS[model_language])
+embedding_model_id = embedding_model_ids[0]
+embedding_model_configuration = SUPPORTED_EMBEDDING_MODELS[model_language][embedding_model_id]
+print(f"Selected embedding model {embedding_model_id}")
 
-embedding_model_id = widgets.Dropdown(
-    options=embedding_model_id,
-    value=embedding_model_id[0],
-    description="Embedding Model:",
-    disabled=False,
-)
-
-print("embedding_model_id is", embedding_model_id)
-
-embedding_model_configuration = SUPPORTED_EMBEDDING_MODELS[model_language.value][embedding_model_id.value]
-print(f"Selected {embedding_model_id.value} model")
-
-if not Path(embedding_model_id.value).exists():
+if not Path(embedding_model_id).exists():
     ov_model = OVModelForFeatureExtraction.from_pretrained(embedding_model_configuration["model_id"], compile=False, export=True)
     tokenizer = AutoTokenizer.from_pretrained(embedding_model_configuration["model_id"])
     ov_model.half()
-    ov_model.save_pretrained(embedding_model_id.value)
-    tokenizer.save_pretrained(embedding_model_id.value)
+    ov_model.save_pretrained(embedding_model_id)
+    tokenizer.save_pretrained(embedding_model_id)
 
-# Convert rerank model
-rerank_model_id = list(SUPPORTED_RERANK_MODELS)
+# # Convert rerank model
+rerank_model_ids = list(SUPPORTED_RERANK_MODELS)
+rerank_model_id = rerank_model_ids[0]
+rerank_model_configuration = SUPPORTED_RERANK_MODELS[rerank_model_id]
+print(f"Selected rerank model {rerank_model_id}")
 
-rerank_model_id = widgets.Dropdown(
-    options=rerank_model_id,
-    value=rerank_model_id[0],
-    description="Rerank Model:",
-    disabled=False,
-)
-
-print("rerank_model_id is", rerank_model_id)
-
-rerank_model_configuration = SUPPORTED_RERANK_MODELS[rerank_model_id.value]
-print(f"Selected {rerank_model_id.value} model")
-
-if not Path(rerank_model_id.value).exists():
+if not Path(rerank_model_id).exists():
     ov_model = OVModelForSequenceClassification.from_pretrained(rerank_model_configuration["model_id"], compile=False, export=True)
     tokenizer = AutoTokenizer.from_pretrained(rerank_model_configuration["model_id"])
     ov_model.half()
-    ov_model.save_pretrained(rerank_model_id.value)
-    tokenizer.save_pretrained(rerank_model_id.value)
+    ov_model.save_pretrained(rerank_model_id)
+    tokenizer.save_pretrained(rerank_model_id)
 
 
 # Select device
 core = ov.Core()
-embedding_device = widgets.Dropdown(
-    options=core.available_devices + ["AUTO"],
-    value="CPU",
-    description="Device:",
-    disabled=False,
-)
+embedding_device = "CPU"
+print(f"Embedding model will be loaded to {embedding_device} device for text embedding")
 
-print("embedding_device is", embedding_device)
-print(f"Embedding model will be loaded to {embedding_device.value} device for text embedding")
+rerank_device = "CPU"
+print(f"Rerank model will be loaded to {rerank_device} device for text reranking")
 
-rerank_device = widgets.Dropdown(
-    options=core.available_devices + ["AUTO"],
-    value="CPU",
-    description="Device:",
-    disabled=False,
-)
-
-print("rerank_device is", rerank_device)
-print(f"Rerenk model will be loaded to {rerank_device.value} device for text reranking")
-
-llm_device = widgets.Dropdown(
-    options=core.available_devices + ["AUTO"],
-    value="CPU",
-    description="Device:",
-    disabled=False,
-)
-
-print("llm_device is", llm_device)
-print(f"LLM model will be loaded to {llm_device.value} device for response generation")
+llm_device = "CPU"
+print(f"LLM model will be loaded to {llm_device} device for response generation")
 
 
-embedding_model_name = embedding_model_id.value
-embedding_model_kwargs = {"device": embedding_device.value}
+embedding_model_kwargs = {"device": embedding_device}
 encode_kwargs = {
     "mean_pooling": embedding_model_configuration["mean_pooling"],
     "normalize_embeddings": embedding_model_configuration["normalize_embeddings"],
 }
 
 embedding = OpenVINOBgeEmbeddings(
-    model_name_or_path=embedding_model_name,
+    model_name_or_path=embedding_model_id,
     model_kwargs=embedding_model_kwargs,
     encode_kwargs=encode_kwargs,
 )
@@ -187,12 +138,11 @@ embedding_result = embedding.embed_query(text)
 embedding_result[:3]
 
 
-rerank_model_name = rerank_model_id.value
-rerank_model_kwargs = {"device": rerank_device.value}
+rerank_model_kwargs = {"device": rerank_device}
 rerank_top_n = 2
 
 reranker = OpenVINOReranker(
-    model_name_or_path=rerank_model_name,
+    model_name_or_path=rerank_model_id,
     model_kwargs=rerank_model_kwargs,
     top_n=rerank_top_n,
 )
@@ -204,31 +154,24 @@ if int8_model_dir.exists():
 if fp16_model_dir.exists():
     available_models.append("FP16")
 
-model_to_run = widgets.Dropdown(
-    options=available_models,
-    value=available_models[0],
-    description="Model to run:",
-    disabled=False,
-)
-print("model_to_run is", model_to_run)
+model_to_run = available_models[0]
+print("The compressed weights of model is", model_to_run)
 
-
-if model_to_run.value == "INT4":
+if model_to_run == "INT4":
     model_dir = int4_model_dir
-elif model_to_run.value == "INT8":
+elif model_to_run == "INT8":
     model_dir = int8_model_dir
 else:
     model_dir = fp16_model_dir
 print(f"Loading model from {model_dir}")
 
-
-cache_dir = os.path.join(os.getcwd(), "cache_dir")
+cache_dir = os.path.join(os.getcwd(), "model", "cache_dir")
 os.makedirs(cache_dir, exist_ok=True)
-ov_config = {"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1", "CACHE_DIR": "cache_dir"}
+ov_config = {"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1", "CACHE_DIR": cache_dir}
 
 # On a GPU device a model is executed in FP16 precision. For red-pajama-3b-chat model there known accuracy
 # issues caused by this, which we avoid by setting precision hint to "f32".
-if llm_model_id.value == "red-pajama-3b-chat" and "GPU" in core.available_devices and llm_device.value in ["GPU", "AUTO"]:
+if llm_model_id == "red-pajama-3b-chat" and "GPU" in core.available_devices and llm_device in ["GPU", "AUTO"]:
     ov_config["INFERENCE_PRECISION_HINT"] = "f32"
 
 llm = HuggingFacePipeline.from_model_id(
@@ -236,19 +179,14 @@ llm = HuggingFacePipeline.from_model_id(
     task="text-generation",
     backend="openvino",
     model_kwargs={
-        "device": llm_device.value,
+        "device": llm_device,
         "ov_config": ov_config,
         "trust_remote_code": True,
     },
     pipeline_kwargs={"max_new_tokens": 2},
 )
-print(llm)
-# llm.invoke("2 + 2 =")
-try:
-    result = llm.invoke("2 + 2 =")
-    print(result)
-except Exception as e:
-    print(f"An error occurred: {e}")
+
+llm.invoke("2 + 2 =")
 
 
 # Run QA over Document
@@ -487,7 +425,11 @@ with gr.Blocks(
     css=".disclaimer {font-variant-caps: all-small-caps;}",
 ) as demo:
     gr.Markdown("""<h1><center>QA over Document</center></h1>""")
-    gr.Markdown(f"""<center>Powered by OpenVINO and {llm_model_id.value} </center>""")
+    gr.Markdown(f"""<center>Powered by OpenVINO and {llm_model_id} </center>""")
+
+    # Insert logo image in the top left corner
+    demo.top_left = gr.Image(value="utils/logo_trans.png", width=100, height=100, interactive=False, show_share_button=False, show_label=False, show_download_button=False)
+
     with gr.Row():
         with gr.Column(scale=1):
             docs = gr.File(
@@ -713,4 +655,19 @@ demo.queue()
 # if you have any issue to launch on your platform, you can pass share=True to launch method:
 # demo.launch(share=True)
 # it creates a publicly shareable link for the interface. Read more in the docs: https://gradio.app/docs/
+
+
+def open_browser():
+    """
+    helper for open browser automaticaly
+
+    """
+    time.sleep(1)
+    webbrowser.open_new(demo.local_url)
+    if demo.share_url:
+        webbrowser.open_new(demo.share_url)
+
+
+threading.Thread(target=open_browser).start()
+
 demo.launch(share=True)

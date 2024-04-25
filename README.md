@@ -44,10 +44,10 @@ Windows 11
    ```
 
 ## Running the Application
+   double click
    ```
-   python run_rag.py
+   run_rag.bat
    ```
-   Or double click run_rag.bat
 
 ## Download and convert models
    ```
