@@ -59,9 +59,9 @@ Windows 11
    python download_convert_model.py --language=English
    ```
 
-**Appendix**
+## Appendix
 
-## Package Versions
+### Package Versions
 This appendix lists the versions of all installed packages for your reference.
 
 | Package                             | Version          |
@@ -93,7 +93,7 @@ This appendix lists the versions of all installed packages for your reference.
 | urllib3                             | 2.2.1            |
 | wheel                               | 0.41.2           |  
 
-## Project Structure
+### Project Structure
 ```text
 openvino-prj/
 │
@@ -117,5 +117,6 @@ openvino-prj/
     ├── llm_config.py
     ├── logo_trans.png
     └── __init__.py
+```
 
 This README provides instructions for setting up Miniconda, configuring the Conda environment, and running an application on a Windows 11 system. Follow the steps above to ensure proper setup and execution of the application. 
