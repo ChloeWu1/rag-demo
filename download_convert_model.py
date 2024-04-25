@@ -1,15 +1,10 @@
 import argparse
 import subprocess
 from pathlib import Path
-import os
 from transformers import AutoTokenizer
-from llm_config import (
-    SUPPORTED_EMBEDDING_MODELS,
-    SUPPORTED_RERANK_MODELS,
-    SUPPORTED_LLM_MODELS,
-)
+from llm_config import SUPPORTED_LLM_MODELS
 
-# 定义INT4的压缩配置
+# Define compression configs for INT4
 compression_configs = {
         "zephyr-7b-beta": {
             "sym": True,
@@ -74,7 +69,7 @@ compression_configs = {
         },
     }
 
-# 命令行参数解析
+# Add arguments
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--language', choices=['English', 'Chinese', 'Japanese'], default='Chinese',
                     help='Language of the model (default: English)')
@@ -83,7 +78,7 @@ args = parser.parse_args()
 
 model_language = args.language
 llm_model_ids = [model_id for model_id, model_config in SUPPORTED_LLM_MODELS[model_language].items() if model_config.get("rag_prompt_template")]
-print("Available models are:", llm_model_ids)
+print("列出可用的模型", llm_model_ids)
 
 tokenizer = None
 while tokenizer is None:
@@ -111,7 +106,7 @@ while tokenizer is None:
     compression_config = compression_configs.get(model_name, compression_configs["default"])
 
     try:
-        # 生成输出路径
+        # Generate output_path
         fp16_model_dir = Path(input_model_name) / "FP16"
         int8_model_dir = Path(input_model_name) / "INT8_compressed_weights"
         int4_model_dir = Path(input_model_name) / "INT4_compressed_weights"
@@ -122,6 +117,7 @@ while tokenizer is None:
             output_path = int8_model_dir
         elif weight_format == "int4":
             output_path = int4_model_dir
+        print("模型的输出路径是：", output_path)
 
         cmd = f"optimum-cli export openvino --model {model_name} --task text-generation-with-past --weight-format {weight_format} {output_path}"
 
@@ -131,7 +127,7 @@ while tokenizer is None:
                 cmd += " --sym"
 
         subprocess.run(cmd, shell=True, check=True)
-        
+
         print("模型转换成功！")
     except Exception as e:
         print(f"转换模型时出现错误：{e}")

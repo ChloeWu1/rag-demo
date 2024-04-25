@@ -19,3 +19,4 @@ unstructured
 scikit-learn 
 python-docx 
 pdfminer.six 
+python-pptx
