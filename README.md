@@ -13,8 +13,11 @@ Windows 11
 
 2. Install Miniconda
    
-   - Install for "Just Me"
-   - Verify the installation path: C:\Users\"username"\miniconda3
+   - Install Miniconda for the "Just Me" option
+   - Verify the installation path in the environment variable
+   ```
+   C:\Users\"your_username"\miniconda3
+   ```
    - Open Anaconda Prompt
 
 3. Configure Conda Environment
@@ -25,27 +28,36 @@ Windows 11
    ```
 
 4. Setup Working Environment
+   Create a new folder on the desktop, named openVino_prj
+   Put rag-requirements.txt, run_rag.py, set_env_vars.bat, run_rag.bat and the required model files into this folder
+   Run under openvino_env environment in Anaconda Prompt:
    ```
-   mkdir openvino_prj 
-   在桌面新建文件夹，命名为openvino_prj. 将rag-requirements.txt, run_rag.py, set_env_vars.bat放进文件夹里。
-   
-   在终端中：
    cd openvino_prj 
    set_env_vars.bat
    ```
 
+5. Setup Openvino-pkg Path and Proxy in openvino_env
    ```
-   set PATH=C:\Users\"username"\Miniconda3\envs\openvino_env\Lib\site-packages\openvino\libs;%PATH% # 每次新开promt都要跑一下，如果确定用户名默认是intel，可以写进bat里。如果每台机器用户不一样，手动设置。
-   
-   set HTTP_PROXY=proxy:port #不下载模型不需要
-   set HTTPS_PROXY=proxy:port #不下载模型不需要
+   set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env\Lib\site-packages\openvino\libs;%PATH% 
+   set HTTP_PROXY=http://proxy-us.intel.com:914
+   set HTTPS_PROXY=http://proxy-us.intel.com:914
    ```
 
-5. Running the Application
+## Running the Application
    ```
    python run_rag.py
    ```
+   Or double click run_rag.bat
 
+## Download and convert models
+   ```
+   python download_convert_model.py
+   ```
+   Select the Chinese model by default, --language parameter can specify the model language
+
+   ```
+   python download_convert_model.py --language=English
+   ```
 
 **Appendix: Package Versions**
 This appendix lists the versions of all installed packages for your reference.
