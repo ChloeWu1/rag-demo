@@ -20,3 +20,4 @@ scikit-learn
 python-docx 
 pdfminer.six 
 python-pptx
+markdown

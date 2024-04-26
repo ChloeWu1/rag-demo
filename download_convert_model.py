@@ -96,9 +96,9 @@ while tokenizer is None:
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         except Exception as e:
-            print(f"下载或加载模型时出现错误：{e}")
+            print(f"下载或加载模型时出现错误:{e}")
 
-    weight_format = input("请输入权重格式（fp16, int8, int4）：")
+    weight_format = input("请输入权重格式(fp16, int8, int4):")
     if weight_format not in ["fp16", "int8", "int4"]:
         print("权重格式错误，请输入有效的格式。")
         continue
