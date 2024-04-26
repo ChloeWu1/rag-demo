@@ -15,41 +15,47 @@ Windows 11
    
    - Install Miniconda for the `Just Me` option
    - Verify the installation path in the environment variable
-   ```
-   C:\Users\"your_username"\miniconda3
-   ```
+      ```
+      C:\Users\"your_username"\miniconda3
+      ```
    - Open Anaconda Prompt
 
 3. Configure Conda Environment
    ```
    conda deactivate  # exit the base environment
-   conda create -n openvino_env python=3.10
-   conda activate openvino_env
+   conda create -n openvino_env_py310 python=3.10
+   conda activate openvino_env_py310
    ```
 
 4. Setup Working Environment
-   Create a new folder on the desktop, named `openvino-prj`.  
-   Run under `openvino_env` environment in Anaconda Prompt:
+   Create a new folder on the desktop, named `openvino-prj`  
+   Run under `openvino_env_py310` environment in Anaconda Prompt:  
    ```
    cd Desktop/openvino-prj
    pip install -r rag-requirements.txt
    ```
 
-5. Setup Openvino-pkg Path and Proxy in openvino_env
+5. Setup Openvino-pkg path and Proxy  
+
+   - Set openvino-pkg path
    ```
-   set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env\Lib\site-packages\openvino\libs;%PATH% 
+   set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env_py310\Lib\site-packages\openvino\libs;%PATH%
+   ```
+   - Set Proxy (Optional)  
+   If you want to download or convert the model, please ensure that you can access huggingface.
+   ```
    set HTTP_PROXY=http://proxy-us.intel.com:914
    set HTTPS_PROXY=http://proxy-us.intel.com:914
    ```
 
 ## Running the Application
-   Double click
+   Double click:
    ```
    run_rag.bat
    ```
 
 ## Download and convert models
-   Run in the openvino_env
+   Run script in the env:
    ```
    python download_convert_model.py
    ```
@@ -58,6 +64,10 @@ Windows 11
    ```
    python download_convert_model.py --language=English
    ```
+
+## How to select models
+   Please check `utils/llm_config.py` and `run_rag.py`.  
+   Modify Line59, Line64, Line87, Line101, Line 159 in the `run_rag.py`  
 
 ## Appendix
 
