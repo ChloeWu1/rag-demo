@@ -14,29 +14,18 @@ Windows 11
 2. Install Miniconda
    
    - Install Miniconda for the `Just Me` option
-   - Verify the installation path in the environment variable
-      ```
-      C:\Users\"your_username"\miniconda3
-      ```
-   - Open Anaconda Prompt
-
-3. Configure Conda Environment
+   - Check the installation path in the environment variable
    ```
-   conda deactivate  # exit the base environment
-   conda create -n openvino_env_py310 python=3.10
-   conda activate openvino_env_py310
+   C:\Users\"your_username"\miniconda3
    ```
 
-4. Setup Working Environment
-   Create a new folder on the desktop, named `openvino-prj`  
-   Run under `openvino_env_py310` environment in Anaconda Prompt:  
+3. Setup Working Environment
+   Double click:
    ```
-   cd Desktop/openvino-prj
-   pip install -r rag-requirements.txt
+   setup_rag.bat
    ```
 
-5. Setup Openvino-pkg path and Proxy  
-
+4. Setup Openvino-pkg path and Proxy(Optional)  
    - Set openvino-pkg path
    ```
    set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env_py310\Lib\site-packages\openvino\libs;%PATH%
@@ -107,20 +96,19 @@ This appendix lists the versions of all installed packages for your reference.
 ```text
 openvino-prj/
 │
-├── download_convert_model.py
-├── rag-requirements.txt
 ├── README.md
+├── setup_rag.bat
 ├── run_rag.bat
-├── run_rag.py
 │
-├── bge-reranker-large/
-│
-├── bge-small-en-v1.5/
-│
-├── bge-small-zh-v1.5/
+├── src/
+│   ├── download_convert_model.py
+│   ├── run_rag.py
 │
 ├── model/
 │   ├── cache_dir/
+│   ├── bge-reranker-large/
+│   ├── bge-small-en-v1.5/
+│   ├── bge-small-zh-v1.5/
 │   └── qwen1.5-7b-chat/
 │
 └── utils/
