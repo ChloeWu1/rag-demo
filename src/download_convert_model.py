@@ -1,8 +1,9 @@
+import os
 import argparse
 import subprocess
 from pathlib import Path
 from transformers import AutoTokenizer
-from utils.llm_config import SUPPORTED_LLM_MODELS
+from llm_config import SUPPORTED_LLM_MODELS
 
 # Define compression configs for INT4
 compression_configs = {
@@ -107,7 +108,8 @@ while tokenizer is None:
 
     try:
         # Generate output_path
-        model_dir = Path("model") / input_model_name
+        src_dir = os.path.abspath(os.path.dirname(__file__))
+        model_dir = Path(os.path.join(os.path.dirname(src_dir), "model")) / input_model_name
         model_dir.mkdir(parents=True, exist_ok=True)  # 确保目录创建，包括其所有父目录
 
         fp16_model_dir = model_dir / "FP16"

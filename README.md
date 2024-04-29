@@ -25,7 +25,7 @@ Windows 11
    setup_rag.bat
    ```
 
-4. Setup Openvino-pkg path and Proxy(Optional)  
+4. Setup Openvino-pkg path and Proxy (Optional)  
    - Set openvino-pkg path
    ```
    set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env_py310\Lib\site-packages\openvino\libs;%PATH%
@@ -46,12 +46,12 @@ Windows 11
 ## Download and convert models
    Run script in the env:
    ```
-   python download_convert_model.py
+   python src/download_convert_model.py
    ```
    Select the Chinese model by default, `--language` parameter can specify the model language.
 
    ```
-   python download_convert_model.py --language=English
+   python src/download_convert_model.py --language=English
    ```
 
 ## How to select models

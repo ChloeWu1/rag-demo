@@ -48,7 +48,7 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader,
 )
 
-from utils.llm_config import (
+from llm_config import (
     SUPPORTED_EMBEDDING_MODELS,
     SUPPORTED_RERANK_MODELS,
     SUPPORTED_LLM_MODELS,
@@ -65,7 +65,9 @@ llm_model_id = llm_model_ids[0]
 llm_model_configuration = SUPPORTED_LLM_MODELS[model_language][llm_model_id]
 print(f"Selected LLM model {llm_model_id}")
 
-model_dir = Path("model") / llm_model_id
+src_dir = os.path.abspath(os.path.dirname(__file__))
+model_dir = Path(os.path.join(os.path.dirname(src_dir), "model")) / llm_model_id
+
 fp16_model_dir = model_dir / "FP16"
 int8_model_dir = model_dir / "INT8_compressed_weights"
 int4_model_dir = model_dir / "INT4_compressed_weights"
@@ -88,37 +90,60 @@ embedding_model_id = embedding_model_ids[0]
 embedding_model_configuration = SUPPORTED_EMBEDDING_MODELS[model_language][embedding_model_id]
 print(f"Selected embedding model {embedding_model_id}")
 
-if not Path(embedding_model_id).exists():
+embedding_model_dir = os.path.join(os.path.dirname(src_dir), "model", embedding_model_id)
+if not embedding_model_dir:
     ov_model = OVModelForFeatureExtraction.from_pretrained(embedding_model_configuration["model_id"], compile=False, export=True)
     tokenizer = AutoTokenizer.from_pretrained(embedding_model_configuration["model_id"])
     ov_model.half()
-    ov_model.save_pretrained(embedding_model_id)
-    tokenizer.save_pretrained(embedding_model_id)
+    ov_model.save_pretrained(embedding_model_dir)
+    tokenizer.save_pretrained(embedding_model_dir)
 
-# # Convert rerank model
+# Convert rerank model
 rerank_model_ids = list(SUPPORTED_RERANK_MODELS)
 rerank_model_id = rerank_model_ids[0]
 rerank_model_configuration = SUPPORTED_RERANK_MODELS[rerank_model_id]
 print(f"Selected rerank model {rerank_model_id}")
 
-if not Path(rerank_model_id).exists():
+rerank_model_dir = os.path.join(os.path.dirname(src_dir), "model", rerank_model_id)
+if not rerank_model_dir:
     ov_model = OVModelForSequenceClassification.from_pretrained(rerank_model_configuration["model_id"], compile=False, export=True)
     tokenizer = AutoTokenizer.from_pretrained(rerank_model_configuration["model_id"])
     ov_model.half()
-    ov_model.save_pretrained(rerank_model_id)
-    tokenizer.save_pretrained(rerank_model_id)
+    ov_model.save_pretrained(rerank_model_dir)
+    tokenizer.save_pretrained(rerank_model_dir)
 
 
 # Select device
 core = ov.Core()
-embedding_device = "CPU"
-print(f"Embedding model will be loaded to {embedding_device} device for text embedding")
 
-rerank_device = "CPU"
-print(f"Rerank model will be loaded to {rerank_device} device for text reranking")
 
-llm_device = "CPU"
-print(f"LLM model will be loaded to {llm_device} device for response generation")
+def get_user_input(prompt, timeout=10):
+    print(prompt)
+    input_string = None
+    def wait_for_input():
+        nonlocal input_string
+        input_string = input()
+    user_thread = threading.Thread(target=wait_for_input)
+    user_thread.start()
+    user_thread.join(timeout=timeout)
+    if user_thread.is_alive():
+        print("No input received within the time limit. Defaulting to 'GPU'.")
+        return "GPU"
+    return input_string
+
+def select_device():
+    options = {"1": "GPU", "2": "CPU", "3": "AUTO"}
+    user_input = get_user_input("Please enter the device for model loading (GPU=1, CPU=2, AUTO=3):")
+    return options.get(user_input, "GPU")
+
+embedding_device = select_device()
+print(f"Embedding model will be loaded to {embedding_device} device for text embedding.")
+
+rerank_device = select_device()
+print(f"Rerank model will be loaded to {rerank_device} device for text reranking.")
+
+llm_device = select_device()
+print(f"LLM model will be loaded to {llm_device} device for response generation.")
 
 
 embedding_model_kwargs = {"device": embedding_device}
@@ -128,7 +153,7 @@ encode_kwargs = {
 }
 
 embedding = OpenVINOBgeEmbeddings(
-    model_name_or_path=embedding_model_id,
+    model_name_or_path=embedding_model_dir,
     model_kwargs=embedding_model_kwargs,
     encode_kwargs=encode_kwargs,
 )
@@ -142,11 +167,13 @@ rerank_model_kwargs = {"device": rerank_device}
 rerank_top_n = 2
 
 reranker = OpenVINOReranker(
-    model_name_or_path=rerank_model_id,
+    model_name_or_path=rerank_model_dir,
     model_kwargs=rerank_model_kwargs,
     top_n=rerank_top_n,
 )
 available_models = []
+print("*****************")
+print
 if int4_model_dir.exists():
     available_models.append("INT4")
 if int8_model_dir.exists():
@@ -165,7 +192,7 @@ else:
     model_dir = fp16_model_dir
 print(f"Loading model from {model_dir}")
 
-cache_dir = os.path.join(os.getcwd(), "model", "cache_dir")
+cache_dir = os.path.join(os.path.dirname(os.getcwd()), "model", "cache_dir")
 os.makedirs(cache_dir, exist_ok=True)
 ov_config = {"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1", "CACHE_DIR": cache_dir}
 
@@ -232,6 +259,24 @@ LOADERS = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
+chinese_examples = [
+    ["英特尔®酷睿™ Ultra处理器可以降低多少功耗？"],
+    ["相比英特尔之前的移动处理器产品，英特尔®酷睿™ Ultra处理器的AI推理性能提升了多少？"],
+    ["英特尔博锐® Enterprise系统提供哪些功能？"],
+]
+
+english_examples = [
+    ["How much power consumption can Intel® Core™ Ultra Processors help save?"],
+    ["Compared to Intel’s previous mobile processor, what is the advantage of Intel® Core™ Ultra Processors for Artificial Intelligence?"],
+    ["What can Intel vPro® Enterprise systems offer?"],
+]
+
+if model_language == "English":
+    text_example_path = "inputs/text_example_en.pdf"
+else:
+    text_example_path = "inputs/text_example_cn.pdf"
+
+examples = chinese_examples if (model_language == "Chinese") else english_examples
 
 stop_tokens = llm_model_configuration.get("stop_tokens")
 
@@ -330,6 +375,7 @@ def create_vectordb(
 
     global combine_docs_chain
     combine_docs_chain = create_stuff_documents_chain(llm, prompt)
+    
     global rag_chain
     rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
 
@@ -435,6 +481,7 @@ with gr.Blocks(
         with gr.Column(scale=1):
             docs = gr.File(
                 label="Step 1: Load text files",
+                value=[text_example_path],
                 file_count="multiple",
                 file_types=[
                     ".csv",
@@ -555,6 +602,7 @@ with gr.Blocks(
                         submit = gr.Button("Submit")
                         stop = gr.Button("Stop")
                         clear = gr.Button("Clear")
+            gr.Examples(examples, inputs=msg, label="Click on any example and press the 'Submit' button")
             retriever_argument = gr.Accordion("Retriever Configuration", open=True)
             with retriever_argument:
                 with gr.Row():
@@ -632,11 +680,11 @@ with gr.Blocks(
         queue=False,
     )
     clear.click(lambda: None, None, chatbot, queue=False)
-    vector_search_top_k.change(
+    vector_search_top_k.release(
         update_retriever,
         [vector_search_top_k, vector_rerank_top_n, do_rerank, search_method],
     )
-    vector_rerank_top_n.change(
+    vector_rerank_top_n.release(
         update_retriever,
         [vector_search_top_k, vector_rerank_top_n, do_rerank, search_method],
     )
@@ -659,16 +707,10 @@ demo.queue()
 
 
 def open_browser():
-    """
-    helper for open browser automaticaly
-
-    """
     time.sleep(1)
     webbrowser.open_new(demo.local_url)
-    if demo.share_url:
-        webbrowser.open_new(demo.share_url)
 
 
 threading.Thread(target=open_browser).start()
 
-demo.launch(share=True)
+demo.launch()
