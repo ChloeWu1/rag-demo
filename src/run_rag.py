@@ -172,8 +172,6 @@ reranker = OpenVINOReranker(
     top_n=rerank_top_n,
 )
 available_models = []
-print("*****************")
-print
 if int4_model_dir.exists():
     available_models.append("INT4")
 if int8_model_dir.exists():

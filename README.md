@@ -8,33 +8,18 @@ Windows 11
 
 1. Download Miniconda
 
-   - [Miniconda Installation Guide](https://docs.anaconda.com/free/miniconda/)
-   - Download Link: [Miniconda3-latest-Windows-x86_64.exe](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe)
-
-2. Install Miniconda
-   
-   - Install Miniconda for the `Just Me` option
-   - Check the installation path in the environment variable
+   - [Miniconda Installation Guide](https://docs.anaconda.com/free/miniconda/)  
+   - Download Link: [Miniconda3-latest-Windows-x86_64.exe](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe)  
+   - Install Miniconda for the `Just Me` option  
+   - Check the installation path in the environment variable  
    ```
    C:\Users\"your_username"\miniconda3
    ```
 
-3. Setup Working Environment
+2. Setup Working Environment
    Double click:
    ```
    setup_rag.bat
-   ```
-
-4. Setup Openvino-pkg path and Proxy (Optional)  
-   - Set openvino-pkg path
-   ```
-   set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env_py310\Lib\site-packages\openvino\libs;%PATH%
-   ```
-   - Set Proxy (Optional)  
-   If you want to download or convert the model, please ensure that you can access huggingface.
-   ```
-   set HTTP_PROXY=http://proxy-us.intel.com:914
-   set HTTPS_PROXY=http://proxy-us.intel.com:914
    ```
 
 ## Running the Application
@@ -52,6 +37,18 @@ Windows 11
 
    ```
    python src/download_convert_model.py --language=English
+   ```
+
+## Setup Openvino-pkg path and Proxy (Optional)  
+   - Set openvino-pkg path
+   ```
+   set PATH=C:\Users\"your_username"\Miniconda3\envs\openvino_env_py310\Lib\site-packages\openvino\libs;%PATH%
+   ```
+   - Set Proxy (Optional)  
+   If you want to download or convert the model, please ensure that you can access huggingface.
+   ```
+   set HTTP_PROXY=http://proxy-us.intel.com:914
+   set HTTPS_PROXY=http://proxy-us.intel.com:914
    ```
 
 ## How to select models
@@ -100,9 +97,14 @@ openvino-prj/
 ├── setup_rag.bat
 ├── run_rag.bat
 │
+├── inputs/
+│   ├── text_example_cn.pdf
+│   ├── text_example_en.pdf
+│
 ├── src/
 │   ├── download_convert_model.py
 │   ├── run_rag.py
+│   ├── llm_config.py
 │
 ├── model/
 │   ├── cache_dir/
@@ -112,7 +114,6 @@ openvino-prj/
 │   └── qwen1.5-7b-chat/
 │
 └── utils/
-    ├── llm_config.py
     ├── logo_trans.png
     └── __init__.py
 ```

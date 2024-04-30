@@ -1,14 +1,14 @@
 @echo off
 
-echo Setting up proxy...
-set HTTP_PROXY=http://proxy-us.intel.com:914
-set HTTPS_PROXY=http://proxy-us.intel.com:914
+@REM echo Setting up proxy... (Optional)
+@REM set HTTP_PROXY=http://proxy-us.intel.com:914
+@REM set HTTPS_PROXY=http://proxy-us.intel.com:914
 
 echo Creating Python environment...
-call "C:\Users\intel\miniconda3\Scripts\conda" create -n openvino_env_py310 python=3.10 -y
+call "C:\Users\%USERNAME%\miniconda3\Scripts\conda" create -n openvino_env_py310 python=3.10 -y
 
 echo Activating environment...
-call "C:\Users\intel\miniconda3\Scripts\activate.bat" openvino_env_py310
+call "C:\Users\%USERNAME%\miniconda3\Scripts\activate.bat" openvino_env_py310
 
 echo Installing requirements...
 pip install --extra-index-url https://download.pytorch.org/whl/cpu ^
