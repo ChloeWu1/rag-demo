@@ -38,7 +38,7 @@ from langchain.text_splitter import (
 from langchain_community.document_loaders import (
     CSVLoader,
     EverNoteLoader,
-    PDFMinerLoader,
+    PyPDFLoader,
     TextLoader,
     UnstructuredEPubLoader,
     UnstructuredHTMLLoader,
@@ -251,7 +251,7 @@ LOADERS = {
     ".html": (UnstructuredHTMLLoader, {}),
     ".md": (UnstructuredMarkdownLoader, {}),
     ".odt": (UnstructuredODTLoader, {}),
-    ".pdf": (PDFMinerLoader, {}),
+    ".pdf": (PyPDFLoader, {}),
     ".ppt": (UnstructuredPowerPointLoader, {}),
     ".pptx": (UnstructuredPowerPointLoader, {}),
     ".txt": (TextLoader, {"encoding": "utf8"}),

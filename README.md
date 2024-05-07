@@ -114,8 +114,8 @@ openvino-prj/
 │   └── qwen1.5-7b-chat/
 │
 └── utils/
-    ├── logo_trans.png
-    └── __init__.py
+│   ├── requirements.txt
+    └── logo_trans.png
 ```
 
 This README provides instructions for setting up Miniconda, configuring the Conda environment, and running an application on a Windows 11 system. Follow the steps above to ensure proper setup and execution of the application. 

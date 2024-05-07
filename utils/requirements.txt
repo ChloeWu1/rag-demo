@@ -1,0 +1,24 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+git+https://github.com/huggingface/optimum-intel.git
+git+https://github.com/openvinotoolkit/nncf.git 
+datasets==2.18.0
+accelerate==0.29.2
+openvino-nightly==2024.2.0.dev20240416
+gradio==3.50.0
+onnx==1.16.0
+einops==0.7.0
+transformers_stream_generator==0.0.5
+tiktoken==0.6.0
+transformers==4.39.3
+bitsandbytes==0.43.1
+chromadb==0.4.24
+sentence_transformers==2.6.1
+unstructured==0.13.2
+scikit-learn==1.4.2
+python-docx==1.1.0
+pdfminer.six==20231228
+python-pptx
+markdown
+pypdf
+langchain
+langchainhub
